@@ -1,0 +1,42 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyTorch & YOLO runs and caches
+runs/
+*.pt
+*.onnx
+*.engine
+*.tflite
+*.torchscript
+*.mlmodel
+
+# Caches & temporary files
+*.cache
+.cache/
+*.log
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+*.swp
+*.bak
+*~
+
+# Operating System files
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Virtual Environments
+venv/
+env/
+.venv/
+
+# Release candidate excludes artifacts whose redistribution rights are unverified
+dataset/
+weights/

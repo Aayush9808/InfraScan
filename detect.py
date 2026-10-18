@@ -1,0 +1,306 @@
+import os
+import sys
+import time
+import json
+import argparse
+from pathlib import Path
+from typing import Callable, Optional
+import cv2
+import numpy as np
+import pandas as pd
+from ultralytics import YOLO
+
+def classify_severity(box_area, frame_area):
+    ratio = (box_area / frame_area) * 100.0
+    if ratio >= 8.0:
+        return "CRITICAL", (0, 0, 255), ratio
+    elif ratio >= 2.5:
+        return "MODERATE", (0, 140, 255), ratio
+    else:
+        return "MINOR", (0, 215, 255), ratio
+
+def draw_hud(frame, detections, fps=0.0):
+    h, w = frame.shape[:2]
+
+    overlay = frame.copy()
+    cv2.rectangle(overlay, (0, 0), (w, 55), (20, 24, 30), -1)
+    cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
+
+    cv2.putText(frame, "ROAD HAZARD DETECTION SYSTEM", (20, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 240, 255), 2, cv2.LINE_AA)
+    cv2.putText(frame, f"FPS: {fps:.1f}", (w - 140, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 120), 2, cv2.LINE_AA)
+
+    pothole_count = len(detections)
+    crit_count = sum(1 for d in detections if d['severity'] == "CRITICAL")
+
+    status_text = f"Potholes Detected: {pothole_count} | Critical Hazards: {crit_count}"
+    cv2.putText(frame, status_text, (20, 48), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (220, 220, 220), 1, cv2.LINE_AA)
+
+    if crit_count > 0:
+        alert_w = min(500, w - 40)
+        ax1 = (w - alert_w) // 2
+        ax2 = ax1 + alert_w
+        cv2.rectangle(frame, (ax1, h - 60), (ax2, h - 15), (0, 0, 200), -1)
+        cv2.rectangle(frame, (ax1, h - 60), (ax2, h - 15), (255, 255, 255), 2)
+        cv2.putText(frame, "WARNING: SEVERE ROAD DAMAGE AHEAD", (ax1 + 25, h - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2, cv2.LINE_AA)
+
+    return frame
+
+def run_detection(
+    source="dataset/images/test",
+    weights="weights/best.pt",
+    conf=0.25,
+    iou=0.45,
+    imgsz=640,
+    device=None,
+    save=True,
+    show=False,
+    output_dir="runs/detect/predict",
+    export_csv=True,
+    progress_callback: Optional[Callable[[int, int], None]] = None
+):
+    print("=" * 65)
+    print("  🔍 Initializing YOLO Pothole Detection Inference")
+    print("=" * 65)
+
+    weights_path = Path(weights)
+    if not weights_path.exists():
+        print(f"⚠️ Checkpoint '{weights}' not found. Falling back to pretrained 'yolo11s.pt'")
+        weights_path = "yolo11s.pt"
+
+    model = YOLO(str(weights_path))
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    is_cam = (source.isdigit() or source.startswith('rtsp://') or source.startswith('http://'))
+    is_video = not is_cam and Path(source).suffix.lower() in ['.mp4', '.avi', '.mov', '.mkv']
+
+    telemetry_records = []
+
+    if is_cam or is_video:
+        cap_src = int(source) if source.isdigit() else source
+
+        if is_cam and sys.platform == 'win32' and isinstance(cap_src, int):
+            cap = cv2.VideoCapture(cap_src, cv2.CAP_DSHOW)
+            if not cap.isOpened():
+                cap = cv2.VideoCapture(cap_src)
+        else:
+            cap = cv2.VideoCapture(cap_src)
+
+        if not cap.isOpened():
+            print(f"❌ Error: Could not open video/camera source: {source}")
+            if is_cam:
+                print("💡 Hint: Ensure your webcam is connected and not currently used by another application (e.g. Teams, Zoom, Browser).")
+            return []
+
+        w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 640
+        h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 480
+        src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        if src_fps <= 0 or np.isnan(src_fps):
+            src_fps = 30.0
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+
+        writer = None
+        if save and not is_cam:
+            out_vid = out_dir / "detection_output.mp4"
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            writer = cv2.VideoWriter(str(out_vid), fourcc, src_fps, (w, h))
+            if not writer.isOpened():
+                cap.release()
+                raise RuntimeError(f"Could not create output video: {out_vid}")
+            print(f"🎥 Saving annotated video to: {out_vid}")
+
+        frame_idx = 0
+        prev_time = time.time()
+        show_hud_overlay = True
+        current_conf = conf
+
+        if is_cam:
+            print("=" * 65)
+            print("  📹 Live Camera Feed Active!")
+            print("  Controls:")
+            print("    [Q] / [ESC] - Quit live detection")
+            print("    [S]         - Save snapshot of current frame")
+            print("    [+] / [=]   - Increase confidence threshold (+0.05)")
+            print("    [-] / [_]   - Decrease confidence threshold (-0.05)")
+            print("    [H]         - Toggle HUD on/off")
+            print("=" * 65)
+
+        try:
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                frame_idx += 1
+                curr_time = time.time()
+                fps = 1.0 / max(1e-5, (curr_time - prev_time))
+                prev_time = curr_time
+
+                results = model.predict(frame, conf=current_conf, iou=iou, imgsz=imgsz, device=device, verbose=False)[0]
+
+                frame_area = w * h
+                frame_dets = []
+
+                for box in results.boxes:
+                    bx1, by1, bx2, by2 = map(int, box.xyxy[0].cpu().numpy())
+                    confidence = float(box.conf[0].cpu().numpy())
+                    box_w = bx2 - bx1
+                    box_h = by2 - by1
+                    box_area = box_w * box_h
+
+                    sev, color, ratio = classify_severity(box_area, frame_area)
+                    frame_dets.append({
+                        'frame': frame_idx,
+                        'box': [bx1, by1, bx2, by2],
+                        'confidence': round(confidence, 4),
+                        'severity': sev,
+                        'coverage_pct': round(ratio, 2)
+                    })
+
+                    cv2.rectangle(frame, (bx1, by1), (bx2, by2), color, 2)
+                    label = f"Pothole {confidence:.2f} ({sev})"
+                    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                    cv2.rectangle(frame, (bx1, max(0, by1 - th - 6)), (bx1 + tw + 6, max(th + 6, by1)), color, -1)
+                    cv2.putText(frame, label, (bx1 + 3, max(th + 2, by1 - 3)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+
+                telemetry_records.extend(frame_dets)
+
+                if show_hud_overlay:
+                    frame = draw_hud(frame, frame_dets, fps)
+                    if is_cam:
+                        cv2.putText(frame, f"Conf: {current_conf:.2f} | [S] Snap [Q] Quit [H] HUD", (20, h - 15),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1, cv2.LINE_AA)
+
+                if writer:
+                    writer.write(frame)
+                if progress_callback is not None:
+                    progress_callback(frame_idx, total_frames)
+                if show:
+                    cv2.imshow("YOLO Pothole Detection - Live Camera / Video", frame)
+                    key = cv2.waitKey(1) & 0xFF
+                    if key in [ord('q'), 27]:
+                        print("\nExiting live inference stream.")
+                        break
+                    elif key in [ord('s'), ord('S')]:
+                        snap_p = out_dir / f"snapshot_{int(time.time())}.jpg"
+                        cv2.imwrite(str(snap_p), frame)
+                        print(f"📸 Snapshot saved to: {snap_p}")
+                    elif key in [ord('+'), ord('=')]:
+                        current_conf = min(0.95, current_conf + 0.05)
+                        print(f"Confidence threshold adjusted to: {current_conf:.2f}")
+                    elif key in [ord('-'), ord('_')]:
+                        current_conf = max(0.05, current_conf - 0.05)
+                        print(f"Confidence threshold adjusted to: {current_conf:.2f}")
+                    elif key in [ord('h'), ord('H')]:
+                        show_hud_overlay = not show_hud_overlay
+        finally:
+            cap.release()
+            if writer:
+                writer.release()
+            if show:
+                cv2.destroyAllWindows()
+
+    else:
+        src_path = Path(source)
+        if src_path.is_file():
+            img_paths = [src_path]
+        else:
+            img_paths = list(src_path.glob("*.jpg")) + list(src_path.glob("*.png")) + list(src_path.glob("*.jpeg"))
+
+        print(f"Found {len(img_paths)} image(s) for processing...")
+        for img_p in img_paths:
+            img = cv2.imread(str(img_p))
+            if img is None:
+                continue
+            h, w = img.shape[:2]
+            frame_area = w * h
+
+            results = model.predict(img, conf=conf, iou=iou, imgsz=imgsz, device=device, verbose=False)[0]
+            frame_dets = []
+
+            for box in results.boxes:
+                bx1, by1, bx2, by2 = map(int, box.xyxy[0].cpu().numpy())
+                confidence = float(box.conf[0].cpu().numpy())
+                box_area = (bx2 - bx1) * (by2 - by1)
+
+                sev, color, ratio = classify_severity(box_area, frame_area)
+                frame_dets.append({
+                    'image': img_p.name,
+                    'box': [bx1, by1, bx2, by2],
+                    'confidence': round(confidence, 4),
+                    'severity': sev,
+                    'coverage_pct': round(ratio, 2)
+                })
+
+                cv2.rectangle(img, (bx1, by1), (bx2, by2), color, 2)
+                label = f"Pothole {confidence:.2f} [{sev}]"
+                (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                cv2.rectangle(img, (bx1, max(0, by1 - th - 6)), (bx1 + tw + 6, max(th + 6, by1)), color, -1)
+                cv2.putText(img, label, (bx1 + 3, max(th + 2, by1 - 3)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+
+            img = draw_hud(img, frame_dets)
+            telemetry_records.extend(frame_dets)
+
+            if save:
+                save_p = out_dir / f"det_{img_p.name}"
+                cv2.imwrite(str(save_p), img)
+
+            if show:
+                cv2.imshow("YOLO Pothole Detection", img)
+                if cv2.waitKey(0) & 0xFF in [ord('q'), 27]:
+                    break
+
+        if show:
+            cv2.destroyAllWindows()
+
+        print(f"Processed {len(img_paths)} images. Annotated results saved to: {out_dir}")
+
+    if export_csv and telemetry_records:
+        csv_file = out_dir / "pothole_telemetry.csv"
+        json_file = out_dir / "pothole_telemetry.json"
+
+        df_log = pd.DataFrame(telemetry_records)
+        df_log.to_csv(csv_file, index=False)
+        with open(json_file, 'w', encoding='utf-8') as f:
+            json.dump(telemetry_records, f, indent=2)
+
+        print(f"📊 Telemetry exported to:")
+        print(f"   CSV:  {csv_file}")
+        print(f"   JSON: {json_file}")
+
+    return telemetry_records
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Run YOLO Pothole Detection Inference")
+    parser.add_argument('--source', type=str, default="dataset/images/test", help="Image path, directory, video path, or camera ID (0)")
+    parser.add_argument('--weights', type=str, default="weights/best.pt", help="Path to model weights")
+    parser.add_argument('--conf', type=float, default=0.25, help="Confidence threshold")
+    parser.add_argument('--iou', type=float, default=0.45, help="NMS IoU threshold")
+    parser.add_argument('--imgsz', type=int, default=640, help="Inference resolution")
+    parser.add_argument('--device', type=str, default=None, help="Device (e.g. 0, cpu)")
+    parser.add_argument('--show', action='store_true', help="Display live rendering window")
+    parser.add_argument('--save', dest='save', action='store_true', default=True, help="Save detection results (images/video, default: True)")
+    parser.add_argument('--no-save', dest='save', action='store_false', help="Disable saving results")
+    parser.add_argument('--camera', '--webcam', dest='camera', action='store_true', help="Open default camera (webcam index 0) for real-time live testing")
+    parser.add_argument('--cam-id', type=int, default=0, help="Camera device index (default: 0)")
+    parser.add_argument('--output', type=str, default="runs/detect/predict", help="Output directory")
+    args = parser.parse_args()
+
+    source_val = args.source
+    show_val = args.show
+    if args.camera:
+        source_val = str(args.cam_id)
+        show_val = True
+
+    run_detection(
+        source=source_val,
+        weights=args.weights,
+        conf=args.conf,
+        iou=args.iou,
+        imgsz=args.imgsz,
+        device=args.device,
+        save=args.save,
+        show=show_val,
+        output_dir=args.output
+    )
