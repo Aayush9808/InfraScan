@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#060b13">
+  <meta name="description" content="InfraScan is a local-first computer-vision dashboard for pothole inspection, hazard severity scoring and road telemetry.">
+  <title>InfraScan · Road Intelligence</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="ambient" aria-hidden="true">
+    <span class="ambient__glow ambient__glow--one"></span>
+    <span class="ambient__glow ambient__glow--two"></span>
+    <span class="ambient__grid"></span>
+    <span class="ambient__noise"></span>
+  </div>
+
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+      <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M4 12h16"/></symbol>
+      <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/><path d="m10 9 5 3-5 3z"/></symbol>
+      <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx=".8"/><path d="M9 3v3.5M15 3v3.5M9 17.5V21M15 17.5V21M3 9h3.5M3 15h3.5M17.5 9H21M17.5 15H21"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+      <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19.5c-4 1.2-4-2-5.5-2.5M15 21v-3.4a3 3 0 0 0-.8-2.3c2.7-.3 5.5-1.3 5.5-6a4.7 4.7 0 0 0-1.3-3.3 4.4 4.4 0 0 0-.1-3.3S17 2.2 15 3.8a12.2 12.2 0 0 0-6 0C7 2.2 5.7 2.7 5.7 2.7a4.4 4.4 0 0 0-.1 3.3A4.7 4.7 0 0 0 4.3 9.3c0 4.7 2.8 5.7 5.5 6a3 3 0 0 0-.8 2.3V21"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.3-2h6.4L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+      <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 4.5-4.5 3 3 3-2.5L20 18"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12m0 0 4.5-4.5M12 16l-4.5-4.5"/><path d="M4 18.5V20h16v-1.5"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 6.5"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4.2 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4.5M12 17h.01"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+      <symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 6.4"/><path d="M20 5v6h-6"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5.5c0 4.3 2.9 7.9 7 9.5 4.1-1.6 7-5.2 7-9.5V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 12.5 9 5 9-5M3 17l9 5 9-5"/></symbol>
+      <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H15a4 4 0 0 0 0-8H9a4 4 0 0 1 0-8h6.5"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6h4"/></symbol>
+      <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12z"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol>
+      <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="10" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10M12 14v2.5"/></symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="m7 9 3 3-3 3M13 15h4"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="app" id="app">
+    <div class="scrim" id="scrim"></div>
+
+    <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+      <div class="sidebar__brand">
+        <a class="brand" href="#/overview" aria-label="InfraScan overview">
+          <span class="brand__mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M12 6 8 26M20 6l4 20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M9 16h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </span>
+          <span class="brand__text"><strong>InfraScan</strong><small>Road intelligence</small></span>
+        </a>
+        <button class="icon-btn sidebar__close" id="sidebar-close" aria-label="Close navigation">
+          <svg class="icon"><use href="#i-x"/></svg>
+        </button>
+      </div>
+
+      <nav class="nav">
+        <p class="nav__label">Workspace</p>
+        <a class="nav__item" href="#/overview" data-nav="overview">
+          <svg class="icon"><use href="#i-grid"/></svg><span>Overview</span>
+        </a>
+        <a class="nav__item" href="#/inspect" data-nav="inspect">
+          <svg class="icon"><use href="#i-scan"/></svg><span>Image inspection</span>
+        </a>
+        <a class="nav__item" href="#/video" data-nav="video">
+          <svg class="icon"><use href="#i-film"/></svg><span>Video analysis</span>
+        </a>
+        <a class="nav__item" href="#/system" data-nav="system">
+          <svg class="icon"><use href="#i-cpu"/></svg><span>System</span>
+        </a>
+      </nav>
+
+      <div class="side-card">
+        <div class="side-card__head"><span>Runtime</span><span class="status-dot" id="sidebar-dot" data-state="loading"></span></div>
+        <div class="runtime-line"><span>Model</span><strong id="sidebar-model">Connecting…</strong></div>
+        <div class="runtime-line"><span>Device</span><strong id="sidebar-device">—</strong></div>
+        <a class="text-link" href="#/system">System details <svg class="icon"><use href="#i-arrow"/></svg></a>
+      </div>
+
+      <div class="side-card">
+        <div class="side-card__head"><span>Inference parameters</span><button class="link-btn" id="reset-params" type="button">Reset</button></div>
+        <label class="control" for="conf-range">
+          <span>Confidence <output id="conf-value" for="conf-range">0.25</output></span>
+          <input type="range" id="conf-range" min="0.05" max="1" step="0.05" value="0.25">
+        </label>
+        <p class="control-hint">Raising this reduces false positives; lowering it surfaces weaker candidates.</p>
+        <label class="control" for="iou-range">
+          <span>NMS IoU <output id="iou-value" for="iou-range">0.45</output></span>
+          <input type="range" id="iou-range" min="0.1" max="1" step="0.05" value="0.45">
+        </label>
+        <p class="control-hint">Controls how much overlapping boxes are suppressed.</p>
+      </div>
+
+      <div class="side-card side-card--legend">
+        <div class="side-card__head"><span>Severity scale</span><span class="mini-label">Frame area</span></div>
+        <div class="legend"><span class="legend__dot" data-sev="critical"></span><div><strong>Critical</strong><small>Coverage ≥ 8%</small></div></div>
+        <div class="legend"><span class="legend__dot" data-sev="moderate"></span><div><strong>Moderate</strong><small>2.5% – 8%</small></div></div>
+        <div class="legend"><span class="legend__dot" data-sev="minor"></span><div><strong>Minor</strong><small>&lt; 2.5%</small></div></div>
+      </div>
+
+      <div class="sidebar__foot">
+        <div class="sidebar__links">
+          <a href="https://github.com/Aayush9808/InfraScan" target="_blank" rel="noreferrer">GitHub <svg class="icon"><use href="#i-external"/></svg></a>
+          <a href="https://github.com/Aayush9808/InfraScan-Documentation" target="_blank" rel="noreferrer">Docs <svg class="icon"><use href="#i-external"/></svg></a>
+        </div>
+        <span>v2.0 · Local-first</span>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <button class="icon-btn topbar__menu" id="menu-btn" aria-label="Open navigation">
+          <svg class="icon"><use href="#i-menu"/></svg>
+        </button>
+        <div class="topbar__titles">
+          <span class="topbar__eyebrow" id="page-eyebrow">Workspace</span>
+          <h1 class="topbar__title" id="page-title">Overview</h1>
+        </div>
+        <div class="topbar__actions">
+          <button class="palette-trigger" id="palette-open" type="button">
+            <svg class="icon"><use href="#i-search"/></svg><span>Jump to…</span><kbd>⌘K</kbd>
+          </button>
+          <div class="status-chip" id="model-chip" data-state="loading">
+            <span class="status-dot" data-state="loading"></span><span id="model-chip-text">Connecting</span>
+          </div>
+          <a class="icon-btn" href="https://github.com/Aayush9808/InfraScan" target="_blank" rel="noreferrer" aria-label="Open GitHub repository">
+            <svg class="icon"><use href="#i-github"/></svg>
+          </a>
+        </div>
+      </header>
+
+      <main id="main" tabindex="-1">
+        <!-- ============================== OVERVIEW ============================== -->
+        <section class="view" id="view-overview" data-view="overview">
+          <div class="hero glass reveal">
+            <div class="hero__copy">
+              <p class="eyebrow"><span class="pulse-dot"></span>Road surface intelligence · local-first</p>
+              <h2>See the road.<br><em>Before it fails.</em></h2>
+              <p class="hero__lead">InfraScan turns ordinary road imagery into structured hazard intelligence. Detect potholes, score severity from real frame coverage, and export telemetry for maintenance planning — all on your machine.</p>
+              <div class="hero__actions">
+                <a class="btn btn--primary" href="#/inspect">Inspect an image <svg class="icon"><use href="#i-arrow"/></svg></a>
+                <a class="btn btn--ghost" href="#/video"><svg class="icon"><use href="#i-play"/></svg>Analyse a video</a>
+              </div>
+              <div class="hero__meta">
+                <span><svg class="icon"><use href="#i-lock"/></svg>No cloud uploads</span>
+                <span><svg class="icon"><use href="#i-cpu"/></svg>Runs locally</span>
+                <span><svg class="icon"><use href="#i-layers"/></svg>YOLO detection</span>
+              </div>
+            </div>
+            <div class="hero__visual">
+              <div class="scanner" aria-label="Inference pipeline illustration">
+                <div class="scanner__top">
+                  <span class="scanner__title"><span class="scanner__led"></span>Inference pipeline</span>
+                  <span class="scanner__state" id="hero-model-badge">Standby</span>
+                </div>
+                <div class="scanner__stage">
+                  <div class="road" aria-hidden="true">
+                    <span class="road__line road__line--left"></span>
+                    <span class="road__line road__line--mid"></span>
+                    <span class="road__line road__line--right"></span>
+                    <span class="road__horizon"></span>
+                  </div>
+                  <span class="reticle reticle--tl"></span><span class="reticle reticle--tr"></span>
+                  <span class="reticle reticle--bl"></span><span class="reticle reticle--br"></span>
+                  <span class="scanbeam"></span>
+                  <div class="scanner__tags">
+                    <span class="tag tag--one">Frame · RGB</span>
+                    <span class="tag tag--two">640 × 640</span>
+                    <span class="tag tag--three">Severity map</span>
+                  </div>
+                  <div class="scanner__readout"><span>ROAD SURFACE</span><span class="mono">LIVE</span></div>
+                </div>
+                <div class="scanner__foot">
+                  <div><small>Checkpoint</small><strong id="hero-checkpoint">—</strong></div>
+                  <div><small>Device</small><strong id="hero-device">—</strong></div>
+                  <div><small>Last latency</small><strong id="hero-latency">—</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-strip reveal">
+            <div class="stat"><span>Model status</span><strong id="stat-model">Checking…</strong><small>Ultralytics detector</small></div>
+            <div class="stat"><span>Compute</span><strong id="stat-device">—</strong><small>Accelerator auto-selected</small></div>
+            <div class="stat"><span>Checkpoint</span><strong id="stat-checkpoint">—</strong><small id="stat-checkpoint-note">Not loaded</small></div>
+            <div class="stat"><span>Session scans</span><strong id="stat-sessions">0</strong><small>This browser session</small></div>
+          </div>
+
+          <section class="section reveal">
+            <div class="section__head">
+              <div><p class="eyebrow">Capabilities</p><h2>One pipeline. Four ways to act.</h2></div>
+              <p>Every workspace is backed by the same checkpoint, severity engine and telemetry format. No parallel demos, no disconnected results.</p>
+            </div>
+            <div class="cap-grid">
+              <a class="cap-card glass" href="#/inspect">
+                <span class="cap-card__icon"><svg class="icon"><use href="#i-scan"/></svg></span>
+                <div><h3>Image inspection</h3><p>Upload a frame, pick a test-set sample or capture a webcam still. Get boxes, confidence and coverage in one pass.</p></div>
+                <span class="cap-card__link">Open workspace <svg class="icon"><use href="#i-arrow"/></svg></span>
+              </a>
+              <a class="cap-card glass" href="#/video">
+                <span class="cap-card__icon"><svg class="icon"><use href="#i-film"/></svg></span>
+                <div><h3>Video analysis</h3><p>Process dashcam footage frame by frame, watch live progress and export an annotated MP4 with telemetry.</p></div>
+                <span class="cap-card__link">Analyse footage <svg class="icon"><use href="#i-arrow"/></svg></span>
+              </a>
+              <div class="cap-card glass">
+                <span class="cap-card__icon"><svg class="icon"><use href="#i-activity"/></svg></span>
+                <div><h3>Severity scoring</h3><p>Every box is classified against the share of the frame it covers — Critical, Moderate or Minor — using one shared policy.</p></div>
+                <span class="cap-card__note">Critical ≥ 8% · Moderate ≥ 2.5%</span>
+              </div>
+              <div class="cap-card glass">
+                <span class="cap-card__icon"><svg class="icon"><use href="#i-file"/></svg></span>
+                <div><h3>Telemetry export</h3><p>Download annotated media alongside structured CSV/JSON records for audits, reports and municipal workflows.</p></div>
+                <span class="cap-card__note">CSV · JSON · annotated media</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="section reveal">
+            <div class="section__head">
+              <div><p class="eyebrow">Architecture</p><h2>From pixels to priority.</h2></div>
+              <p>The dashboard is a thin local API over the existing inference pipeline. Nothing about the detector is reimplemented in the browser.</p>
+            </div>
+            <div class="pipeline glass">
+              <ol class="pipeline__steps">
+                <li><span class="step-no">01</span><div><h3>Capture</h3><p>Image, dataset sample, webcam still or video frame.</p></div></li>
+                <li><span class="step-no">02</span><div><h3>Detect</h3><p>Ultralytics YOLO localises pothole candidates.</p></div></li>
+                <li><span class="step-no">03</span><div><h3>Filter</h3><p>Confidence and NMS IoU thresholds shape the output.</p></div></li>
+                <li><span class="step-no">04</span><div><h3>Score</h3><p>Bounding-box coverage drives the severity band.</p></div></li>
+                <li><span class="step-no">05</span><div><h3>Export</h3><p>Annotated media plus CSV/JSON telemetry.</p></div></li>
+              </ol>
+              <div class="pipeline__aside">
+                <span class="eyebrow">Runtime</span>
+                <h3>A real detector, not a mock-up.</h3>
+                <p>The same <code>detect.py</code> pipeline powers the CLI, the camera HUD and this dashboard. The web layer only orchestrates inference and presents verified results.</p>
+                <a class="text-link" href="#/system">Explore the runtime <svg class="icon"><use href="#i-arrow"/></svg></a>
+              </div>
+            </div>
+          </section>
+
+          <section class="section reveal">
+            <div class="split">
+              <div class="glass card card--pad">
+                <p class="eyebrow">Severity engine</p>
+                <h2>Not every defect is equal.</h2>
+                <p class="muted">Severity is derived from the proportion of the frame each detection occupies. The bands are deliberately simple, explainable and identical across every workflow.</p>
+                <div class="severity-scale">
+                  <div class="severity-scale__row"><span class="legend__dot" data-sev="critical"></span><strong>Critical</strong><span class="severity-scale__bar"><i style="--w: 24%"></i></span><small>≥ 8%</small></div>
+                  <div class="severity-scale__row"><span class="legend__dot" data-sev="moderate"></span><strong>Moderate</strong><span class="severity-scale__bar"><i style="--w: 58%"></i></span><small>2.5–8%</small></div>
+                  <div class="severity-scale__row"><span class="legend__dot" data-sev="minor"></span><strong>Minor</strong><span class="severity-scale__bar"><i style="--w: 100%"></i></span><small>&lt; 2.5%</small></div>
+                </div>
+                <p class="micro">Coverage is a visual heuristic, not a structural-engineering assessment.</p>
+              </div>
+              <div class="glass card card--pad cta-card">
+                <span class="cta-card__glow" aria-hidden="true"></span>
+                <p class="eyebrow">Start here</p>
+                <h2>Have a road frame?</h2>
+                <p class="muted">Run a live inspection against the configured checkpoint and see exactly what the model finds.</p>
+                <a class="btn btn--primary" href="#/inspect">Open inspection workspace <svg class="icon"><use href="#i-arrow"/></svg></a>
+                <p class="micro"><svg class="icon"><use href="#i-lock"/></svg> Files stay on this machine. Inference is local.</p>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- ============================== IMAGE INSPECTION ============================== -->
+        <section class="view" id="view-inspect" data-view="inspect" hidden>
+          <div class="view-head">
+            <div>
+              <p class="eyebrow">Image workspace</p>
+              <h2>Inspect a road surface</h2>
+              <p class="muted">Choose a frame, tune the detector, and read the result against the same severity policy used by the CLI.</p>
+            </div>
+            <div class="param-summary">
+              <span>conf <strong id="inspect-conf">0.25</strong></span>
+              <span>IoU <strong id="inspect-iou">0.45</strong></span>
+              <span>imgsz <strong>640</strong></span>
+            </div>
+          </div>
+
+          <div class="inspect-grid">
+            <div class="stack">
+              <section class="card glass card--pad">
+                <div class="card-head"><h3><span class="step-badge">1</span>Choose a frame</h3><span class="hint">JPG · PNG · WebP · BMP</span></div>
+                <div class="segmented" role="tablist" aria-label="Image source">
+                  <button type="button" role="tab" data-source="upload" aria-selected="true" id="tab-upload">Upload</button>
+                  <button type="button" role="tab" data-source="sample" aria-selected="false" id="tab-sample">Dataset</button>
+                  <button type="button" role="tab" data-source="camera" aria-selected="false" id="tab-camera">Webcam</button>
+                </div>
+
+                <div class="source-panel" data-panel="upload">
+                  <div class="dropzone" id="image-dropzone" tabindex="0" role="button" aria-label="Upload a road image">
+                    <input type="file" id="image-input" accept="image/jpeg,image/png,image/webp,image/bmp" hidden>
+                    <span class="dropzone__icon"><svg class="icon"><use href="#i-upload"/></svg></span>
+                    <p><strong>Drop a road image</strong> or <span class="underline">browse files</span></p>
+                    <small>Up to 25 MB · processed locally</small>
+                  </div>
+                </div>
+
+                <div class="source-panel" data-panel="sample" hidden>
+                  <div class="sample-grid" id="sample-grid" aria-live="polite">
+                    <div class="sample-skeleton"></div><div class="sample-skeleton"></div><div class="sample-skeleton"></div>
+                    <div class="sample-skeleton"></div><div class="sample-skeleton"></div><div class="sample-skeleton"></div>
+                  </div>
+                  <p class="empty-inline" id="sample-empty" hidden>Dataset samples are unavailable. Add images to <code>dataset/images/test</code> or upload a frame.</p>
+                  <p class="micro" id="sample-note" hidden></p>
+                </div>
+
+                <div class="source-panel" data-panel="camera" hidden>
+                  <div class="camera-prompt">
+                    <span class="camera-prompt__icon"><svg class="icon"><use href="#i-camera"/></svg></span>
+                    <h4>Capture a still frame</h4>
+                    <p>Open your webcam, frame the road, and capture one image. The stream closes immediately after capture.</p>
+                    <button class="btn btn--ghost" type="button" id="open-camera">Open webcam</button>
+                    <p class="micro"><svg class="icon"><use href="#i-lock"/></svg> Browser camera access is required. Nothing is recorded.</p>
+                  </div>
+                </div>
+
+                <div class="selected-frame" id="selected-frame" hidden>
+                  <img id="selected-preview" alt="Selected road frame preview">
+                  <div class="selected-frame__meta">
+                    <span class="source-badge" id="selected-source">Upload</span>
+                    <strong id="selected-name">image.jpg</strong>
+                    <small id="selected-size">—</small>
+                  </div>
+                  <button class="icon-btn" type="button" id="clear-image" aria-label="Remove selected image"><svg class="icon"><use href="#i-x"/></svg></button>
+                </div>
+
+                <div class="run-row">
+                  <button class="btn btn--primary btn--wide" type="button" id="run-image" disabled>
+                    <span class="btn__label">Run inspection</span>
+                    <svg class="icon"><use href="#i-arrow"/></svg>
+                  </button>
+                  <span class="micro" id="image-run-note">Select a frame to begin.</span>
+                </div>
+              </section>
+
+              <section class="card glass card--pad">
+                <div class="card-head"><h3>Reading the result</h3><span class="hint">Quick guide</span></div>
+                <ul class="check-list">
+                  <li>Each box is a pothole candidate above your confidence threshold.</li>
+                  <li>Severity is an area heuristic based on bounding-box coverage — not a structural rating.</li>
+                  <li>Latency is measured around the model call on this machine; the first warm-up may be slower.</li>
+                </ul>
+              </section>
+            </div>
+
+            <div class="stack">
+              <section class="card glass result-card" id="image-result-card" aria-live="polite">
+                <div class="card-head card-head--bordered">
+                  <h3><span class="step-badge">2</span>Inspection result</h3>
+                  <span class="status-tag" id="image-result-status" data-state="idle">Awaiting frame</span>
+                </div>
+
+                <div class="result-empty" id="image-empty">
+                  <div class="viewfinder" aria-hidden="true"><span></span><span></span><span></span><span></span><i></i></div>
+                  <h4>Your annotated frame appears here</h4>
+                  <p>Upload, sample or capture a road image, then run the detector.</p>
+                </div>
+
+                <div class="result-loading" id="image-loading" hidden>
+                  <div class="loading-stage" aria-hidden="true">
+                    <span class="loading-stage__ring"></span>
+                    <svg class="icon"><use href="#i-scan"/></svg>
+                    <span class="loading-stage__beam"></span>
+                  </div>
+                  <p class="loading-title" id="loading-message">Running YOLO inference…</p>
+                  <p class="micro">First inference after startup may take longer while the accelerator warms up.</p>
+                  <div class="loading-bar"><span></span></div>
+                </div>
+
+                <div class="alert alert--error" id="image-error" hidden role="alert">
+                  <svg class="icon"><use href="#i-alert"/></svg>
+                  <div><strong>Inspection failed</strong><p id="image-error-text"></p></div>
+                  <button class="btn btn--small btn--ghost" type="button" id="image-retry">Retry</button>
+                </div>
+
+                <div id="image-output" hidden>
+                  <div class="result-toolbar">
+                    <div class="segmented segmented--small" role="group" aria-label="Result view">
+                      <button type="button" id="view-annotated" class="is-active">Annotated</button>
+                      <button type="button" id="view-original">Original</button>
+                    </div>
+                    <button class="icon-btn" type="button" id="expand-image" aria-label="Open result at full size"><svg class="icon"><use href="#i-expand"/></svg></button>
+                  </div>
+                  <div class="result-media" id="result-media">
+                    <img id="result-image" alt="Annotated road inspection result">
+                  </div>
+
+                  <div class="result-metrics">
+                    <div class="metric"><span>Detections</span><strong id="metric-count" data-count="0">0</strong><small>above threshold</small></div>
+                    <div class="metric"><span>Critical</span><strong id="metric-critical" data-count="0">0</strong><small>≥ 8% coverage</small></div>
+                    <div class="metric"><span>Max coverage</span><strong id="metric-coverage">0%</strong><small>of frame area</small></div>
+                    <div class="metric"><span>Inference</span><strong id="metric-latency">—</strong><small>this frame</small></div>
+                  </div>
+
+                  <div class="severity-summary" id="severity-summary"></div>
+
+                  <div class="table-head">
+                    <h4>Detection telemetry</h4>
+                    <span class="mini-label" id="detection-count-label">0 records</span>
+                  </div>
+                  <div class="table-wrap" id="detection-table-wrap">
+                    <table class="data-table">
+                      <thead><tr><th>#</th><th>Severity</th><th>Confidence</th><th>Coverage</th><th>Bounding box</th></tr></thead>
+                      <tbody id="detection-body"></tbody>
+                    </table>
+                  </div>
+                  <div class="empty-success" id="no-detections" hidden>
+                    <span class="empty-success__icon"><svg class="icon"><use href="#i-check"/></svg></span>
+                    <div><strong>No potholes above the current threshold</strong><p>Try lowering confidence or choosing a different frame. The annotated image is still available.</p></div>
+                  </div>
+
+                  <div class="result-actions">
+                    <a class="btn btn--primary btn--small" id="download-image" download="infrascan_annotated.jpg"><svg class="icon"><use href="#i-download"/></svg>Annotated image</a>
+                    <button class="btn btn--ghost btn--small" type="button" id="download-csv"><svg class="icon"><use href="#i-file"/></svg>Telemetry CSV</button>
+                    <button class="btn btn--quiet btn--small" type="button" id="rerun-image"><svg class="icon"><use href="#i-refresh"/></svg>Run again</button>
+                  </div>
+                  <p class="result-meta" id="result-meta"></p>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================== VIDEO ============================== -->
+        <section class="view" id="view-video" data-view="video" hidden>
+          <div class="view-head">
+            <div>
+              <p class="eyebrow">Video workspace</p>
+              <h2>Analyse dashcam footage</h2>
+              <p class="muted">Process a clip frame by frame, follow the progress live, then download the annotated video and telemetry.</p>
+            </div>
+            <div class="param-summary">
+              <span>conf <strong id="video-conf">0.25</strong></span>
+              <span>IoU <strong id="video-iou">0.45</strong></span>
+              <span>format <strong>MP4 · AVI · MOV · MKV</strong></span>
+            </div>
+          </div>
+
+          <div class="video-grid">
+            <section class="card glass card--pad">
+              <div class="card-head"><h3><span class="step-badge">1</span>Source footage</h3><span class="hint">Up to 2 GB</span></div>
+              <div class="dropzone dropzone--video" id="video-dropzone" tabindex="0" role="button" aria-label="Upload a dashcam video">
+                <input type="file" id="video-input" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska" hidden>
+                <span class="dropzone__icon"><svg class="icon"><use href="#i-film"/></svg></span>
+                <p><strong>Drop dashcam footage</strong> or <span class="underline">browse files</span></p>
+                <small>MP4, AVI, MOV or MKV · processed locally</small>
+              </div>
+
+              <div class="selected-frame selected-frame--video" id="selected-video" hidden>
+                <video id="video-preview" controls playsinline preload="metadata"></video>
+                <div class="selected-frame__meta">
+                  <span class="source-badge">Video</span>
+                  <strong id="selected-video-name">footage.mp4</strong>
+                  <small id="selected-video-size">—</small>
+                </div>
+                <button class="icon-btn" type="button" id="clear-video" aria-label="Remove selected video"><svg class="icon"><use href="#i-x"/></svg></button>
+              </div>
+
+              <div class="run-row">
+                <button class="btn btn--primary btn--wide" type="button" id="run-video" disabled>
+                  <span class="btn__label">Process video</span>
+                  <svg class="icon"><use href="#i-arrow"/></svg>
+                </button>
+                <span class="micro" id="video-run-note">Select footage to begin.</span>
+              </div>
+              <p class="micro"><svg class="icon"><use href="#i-info"/></svg> Videos are decoded locally. Long clips can take several minutes depending on compute.</p>
+            </section>
+
+            <section class="card glass card--pad video-status" id="video-status-card" aria-live="polite">
+              <div class="card-head"><h3><span class="step-badge">2</span>Processing</h3><span class="status-tag" id="video-status-tag" data-state="idle">Idle</span></div>
+              <div id="video-idle">
+                <div class="idle-orbit" aria-hidden="true"><span></span><span></span><span></span><svg class="icon"><use href="#i-film"/></svg></div>
+                <h4>Ready when you are</h4>
+                <p>Select a clip and start processing. Progress, frame counts and an ETA appear here.</p>
+              </div>
+              <div id="video-progress" hidden>
+                <p class="eyebrow" id="job-stage">Preparing video</p>
+                <div class="progress-track"><span id="job-bar"></span></div>
+                <div class="progress-meta"><span id="job-frames">Frame 0</span><span id="job-eta">Estimating…</span></div>
+                <p class="micro">Keep this tab open. Processing runs on this machine.</p>
+              </div>
+              <div id="video-complete" hidden>
+                <div class="complete-mark" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></div>
+                <h4>Processing complete</h4>
+                <p>The annotated video and telemetry are ready below.</p>
+                <button class="btn btn--ghost btn--small" type="button" id="jump-to-result">View result <svg class="icon"><use href="#i-arrow"/></svg></button>
+              </div>
+              <div class="alert alert--error" id="video-error" hidden role="alert">
+                <svg class="icon"><use href="#i-alert"/></svg>
+                <div><strong>Processing failed</strong><p id="video-error-text"></p></div>
+              </div>
+            </section>
+          </div>
+
+          <section class="card glass video-result" id="video-result" hidden>
+            <div class="card-head card-head--bordered">
+              <h3><span class="step-badge">3</span>Annotated result</h3>
+              <span class="status-tag" data-state="success">Complete</span>
+            </div>
+            <div class="video-result__grid">
+              <div class="video-result__media">
+                <video id="result-video" controls playsinline preload="metadata"></video>
+              </div>
+              <div class="video-result__side">
+                <div class="result-metrics result-metrics--grid">
+                  <div class="metric"><span>Detections</span><strong id="video-metric-detections">0</strong><small>frame-level records</small></div>
+                  <div class="metric"><span>Critical</span><strong id="video-metric-critical">0</strong><small>frame-level records</small></div>
+                  <div class="metric"><span>Frames</span><strong id="video-metric-frames">0</strong><small>processed</small></div>
+                  <div class="metric"><span>Processing</span><strong id="video-metric-time">—</strong><small id="video-metric-rate">—</small></div>
+                </div>
+                <div class="severity-summary" id="video-severity-summary"></div>
+                <div class="download-list">
+                  <a class="download-item" id="download-video" download>
+                    <span><svg class="icon"><use href="#i-film"/></svg><span><strong>Annotated video</strong><small>MP4 with HUD overlay</small></span></span>
+                    <svg class="icon"><use href="#i-download"/></svg>
+                  </a>
+                  <a class="download-item" id="download-video-csv">
+                    <span><svg class="icon"><use href="#i-file"/></svg><span><strong>Telemetry CSV</strong><small>Frame, box, confidence, severity</small></span></span>
+                    <svg class="icon"><use href="#i-download"/></svg>
+                  </a>
+                  <a class="download-item" id="download-video-json">
+                    <span><svg class="icon"><use href="#i-file"/></svg><span><strong>Telemetry JSON</strong><small>Structured records</small></span></span>
+                    <svg class="icon"><use href="#i-download"/></svg>
+                  </a>
+                </div>
+                <p class="micro" id="video-result-note">Counts are frame-level detections, not deduplicated pothole tracks.</p>
+                <button class="btn btn--quiet btn--small" type="button" id="new-video"><svg class="icon"><use href="#i-refresh"/></svg>Process another video</button>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- ============================== SYSTEM ============================== -->
+        <section class="view" id="view-system" data-view="system" hidden>
+          <div class="view-head">
+            <div>
+              <p class="eyebrow">System</p>
+              <h2>Runtime & transparency</h2>
+              <p class="muted">Everything the dashboard knows about the model, the environment and the API surface — no hidden inference layer.</p>
+            </div>
+            <button class="btn btn--ghost" type="button" id="reload-model"><svg class="icon"><use href="#i-refresh"/></svg>Reload checkpoint</button>
+          </div>
+
+          <div class="system-grid">
+            <section class="card glass card--pad">
+              <div class="card-head"><h3>Model &amp; checkpoint</h3><span class="status-tag" id="system-model-tag" data-state="idle">Checking</span></div>
+              <dl class="spec-list" id="model-specs">
+                <div><dt>Checkpoint</dt><dd id="spec-checkpoint">—</dd></div>
+                <div><dt>Checkpoint path</dt><dd id="spec-path" class="mono">—</dd></div>
+                <div><dt>Task</dt><dd id="spec-task">—</dd></div>
+                <div><dt>Classes</dt><dd id="spec-classes">—</dd></div>
+                <div><dt>Device</dt><dd id="spec-device">—</dd></div>
+                <div><dt>Inference size</dt><dd id="spec-imgsz">—</dd></div>
+                <div><dt>File size</dt><dd id="spec-size">—</dd></div>
+              </dl>
+              <div class="alert alert--error" id="system-model-error" hidden role="alert">
+                <svg class="icon"><use href="#i-alert"/></svg>
+                <div><strong>Checkpoint unavailable</strong><p id="system-model-error-text"></p></div>
+              </div>
+            </section>
+
+            <section class="card glass card--pad">
+              <div class="card-head"><h3>Runtime</h3><span class="hint">Detected, not hard-coded</span></div>
+              <dl class="spec-list spec-list--compact" id="runtime-specs">
+                <div><dt>Python</dt><dd id="rt-python">—</dd></div>
+                <div><dt>Platform</dt><dd id="rt-platform">—</dd></div>
+                <div><dt>Architecture</dt><dd id="rt-machine">—</dd></div>
+                <div><dt>PyTorch</dt><dd id="rt-torch">—</dd></div>
+                <div><dt>Ultralytics</dt><dd id="rt-ultralytics">—</dd></div>
+                <div><dt>OpenCV</dt><dd id="rt-opencv">—</dd></div>
+                <div><dt>NumPy</dt><dd id="rt-numpy">—</dd></div>
+                <div><dt>FastAPI</dt><dd id="rt-fastapi">—</dd></div>
+              </dl>
+            </section>
+          </div>
+
+          <section class="card glass card--pad section-card" id="severity-policy-card">
+            <div class="card-head"><h3>Severity policy</h3><span class="hint">Shared by CLI &amp; dashboard</span></div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Band</th><th>Frame coverage</th><th>Interpretation</th></tr></thead>
+                <tbody id="severity-policy-body">
+                  <tr><td colspan="3" class="table-loading">Loading policy…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div class="split section-card">
+            <section class="card glass card--pad">
+              <div class="card-head"><h3>HTTP API</h3><span class="hint">Same origin</span></div>
+              <div class="api-list">
+                <div><span class="method method--get">GET</span><code>/api/status</code><span>Model, runtime, limits</span></div>
+                <div><span class="method method--post">POST</span><code>/api/detect/image</code><span>Image inference</span></div>
+                <div><span class="method method--post">POST</span><code>/api/detect/video</code><span>Create video job</span></div>
+                <div><span class="method method--get">GET</span><code>/api/jobs/{id}</code><span>Job progress</span></div>
+                <div><span class="method method--post">POST</span><code>/api/model/reload</code><span>Reload checkpoint</span></div>
+              </div>
+              <a class="text-link" href="/api/docs" target="_blank" rel="noreferrer">Open interactive API docs <svg class="icon"><use href="#i-external"/></svg></a>
+            </section>
+
+            <section class="card glass card--pad">
+              <div class="card-head"><h3>Good to know</h3><span class="hint">Honest limits</span></div>
+              <ul class="check-list check-list--warn">
+                <li>Checkpoints and datasets are not bundled; the app states clearly when inference is unavailable.</li>
+                <li>Severity uses bounding-box area. Perspective and occlusion can affect it.</li>
+                <li>Video counts are frame-level detections; there is no cross-frame tracking.</li>
+                <li>Webcam capture requires browser camera permission and a localhost/HTTPS origin.</li>
+              </ul>
+            </section>
+          </div>
+
+          <section class="card glass card--pad section-card">
+            <div class="card-head"><h3>CLI reference</h3><span class="hint">The pipeline outside the browser</span></div>
+            <div class="cli-grid">
+              <div class="cli-block"><div class="cli-block__head"><span>Dashboard</span><button class="copy-btn" data-copy="python run_app.py" aria-label="Copy dashboard command"><svg class="icon"><use href="#i-copy"/></svg></button></div><code>python run_app.py</code></div>
+              <div class="cli-block"><div class="cli-block__head"><span>Image / video</span><button class="copy-btn" data-copy="python detect.py --source path/to/road.jpg --weights weights/best.pt" aria-label="Copy detection command"><svg class="icon"><use href="#i-copy"/></svg></button></div><code>python detect.py --source path/to/road.jpg --weights weights/best.pt</code></div>
+              <div class="cli-block"><div class="cli-block__head"><span>Live camera HUD</span><button class="copy-btn" data-copy="python test_camera.py --weights weights/best.pt" aria-label="Copy camera command"><svg class="icon"><use href="#i-copy"/></svg></button></div><code>python test_camera.py --weights weights/best.pt</code></div>
+              <div class="cli-block"><div class="cli-block__head"><span>Evaluate</span><button class="copy-btn" data-copy="python evaluate.py --weights weights/best.pt --split test" aria-label="Copy evaluation command"><svg class="icon"><use href="#i-copy"/></svg></button></div><code>python evaluate.py --weights weights/best.pt --split test</code></div>
+              <div class="cli-block"><div class="cli-block__head"><span>Export</span><button class="copy-btn" data-copy="python export.py --weights weights/best.pt --format onnx" aria-label="Copy export command"><svg class="icon"><use href="#i-copy"/></svg></button></div><code>python export.py --weights weights/best.pt --format onnx</code></div>
+              <div class="cli-block"><div class="cli-block__head"><span>Train</span><button class="copy-btn" data-copy="python train.py --model yolo11s.pt --epochs 50 --batch 16 --device 0" aria-label="Copy training command"><svg class="icon"><use href="#i-copy"/></svg></button></div><code>python train.py --model yolo11s.pt --epochs 50 --batch 16 --device 0</code></div>
+            </div>
+          </section>
+
+          <p class="system-foot">Looking for architecture, dataset notes and viva material? <a href="https://github.com/Aayush9808/InfraScan-Documentation" target="_blank" rel="noreferrer">Open the documentation repository <svg class="icon"><use href="#i-external"/></svg></a></p>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div class="footer__brand"><span class="brand__mark brand__mark--small" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M12 6 8 26M20 6l4 20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M9 16h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span><strong>InfraScan</strong><small>Road intelligence platform</small></span></div>
+        <p>Local-first computer vision · Ultralytics YOLO · <a href="https://github.com/Aayush9808/InfraScan" target="_blank" rel="noreferrer">GitHub</a> · <a href="https://github.com/Aayush9808/InfraScan-Documentation" target="_blank" rel="noreferrer">Documentation</a></p>
+      </footer>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <dialog class="palette" id="palette" aria-label="Command palette">
+    <div class="palette__search">
+      <svg class="icon"><use href="#i-search"/></svg>
+      <input id="palette-input" type="text" placeholder="Jump to a page or action…" autocomplete="off" spellcheck="false">
+      <kbd>esc</kbd>
+    </div>
+    <div class="palette__list" id="palette-list" role="listbox" aria-label="Commands"></div>
+    <div class="palette__foot"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> select</span><span>Local workspace</span></div>
+  </dialog>
+
+  <dialog class="lightbox" id="lightbox" aria-label="Full-size inspection result">
+    <button class="icon-btn lightbox__close" id="lightbox-close" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+    <img id="lightbox-img" alt="Full-size road inspection">
+    <p id="lightbox-caption"></p>
+  </dialog>
+
+  <dialog class="camera-modal" id="camera-dialog" aria-label="Webcam snapshot">
+    <div class="camera-modal__head"><div><p class="eyebrow">Webcam</p><h3>Capture a road frame</h3></div><button class="icon-btn" id="camera-close" aria-label="Close camera"><svg class="icon"><use href="#i-x"/></svg></button></div>
+    <div class="camera-frame">
+      <video id="camera-video" autoplay playsinline muted></video>
+      <div class="camera-frame__grid" aria-hidden="true"></div>
+      <div class="camera-error" id="camera-error" hidden></div>
+    </div>
+    <div class="camera-modal__foot">
+      <p class="micro"><svg class="icon"><use href="#i-lock"/></svg> The stream stays in your browser and stops after capture.</p>
+      <div class="camera-modal__actions"><button class="btn btn--quiet" type="button" id="camera-cancel">Cancel</button><button class="btn btn--primary" type="button" id="camera-capture" disabled><svg class="icon"><use href="#i-camera"/></svg>Capture frame</button></div>
+    </div>
+  </dialog>
+
+  <script type="module" src="/assets/js/app.js"></script>
+</body>
+</html>
