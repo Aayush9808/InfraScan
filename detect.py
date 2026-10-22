@@ -10,14 +10,7 @@ import numpy as np
 import pandas as pd
 from ultralytics import YOLO
 
-def classify_severity(box_area, frame_area):
-    ratio = (box_area / frame_area) * 100.0
-    if ratio >= 8.0:
-        return "CRITICAL", (0, 0, 255), ratio
-    elif ratio >= 2.5:
-        return "MODERATE", (0, 140, 255), ratio
-    else:
-        return "MINOR", (0, 215, 255), ratio
+from infrascan.severity import classify_severity
 
 def draw_hud(frame, detections, fps=0.0):
     h, w = frame.shape[:2]
@@ -103,12 +96,22 @@ def run_detection(
         writer = None
         if save and not is_cam:
             out_vid = out_dir / "detection_output.mp4"
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            writer = cv2.VideoWriter(str(out_vid), fourcc, src_fps, (w, h))
-            if not writer.isOpened():
+            # H.264 is the only MP4 codec that plays reliably in browsers. If
+            # the local OpenCV build cannot encode it, fall back to mp4v so the
+            # CLI still produces an annotated file.
+            writer = None
+            for codec in ("avc1", "mp4v"):
+                candidate = cv2.VideoWriter(
+                    str(out_vid), cv2.VideoWriter_fourcc(*codec), src_fps, (w, h)
+                )
+                if candidate.isOpened():
+                    writer = candidate
+                    print(f"🎥 Saving annotated video to: {out_vid} ({codec})")
+                    break
+                candidate.release()
+            if writer is None:
                 cap.release()
                 raise RuntimeError(f"Could not create output video: {out_vid}")
-            print(f"🎥 Saving annotated video to: {out_vid}")
 
         frame_idx = 0
         prev_time = time.time()

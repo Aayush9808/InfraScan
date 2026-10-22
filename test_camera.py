@@ -6,14 +6,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-def classify_hazard(box_area, frame_area):
-    ratio = (box_area / frame_area) * 100.0
-    if ratio >= 8.0:
-        return "CRITICAL", (0, 0, 255), ratio
-    elif ratio >= 2.5:
-        return "MODERATE", (0, 140, 255), ratio
-    else:
-        return "MINOR", (0, 215, 255), ratio
+from infrascan.severity import classify_severity
 
 def draw_driver_hud(frame, detections, fps, conf_thresh, show_hud=True):
     if not show_hud:
@@ -138,7 +131,7 @@ def run_camera_test(weights="weights/best.pt", cam_id=0, conf=0.25):
                 bh = by2 - by1
                 box_area = bw * bh
 
-                sev, color, ratio = classify_hazard(box_area, frame_area)
+                sev, color, ratio = classify_severity(box_area, frame_area)
                 frame_dets.append({
                     'box': [bx1, by1, bx2, by2],
                     'confidence': confidence,
