@@ -15,6 +15,7 @@ runs/
 # Caches & temporary files
 *.cache
 .cache/
+.preview/
 *.log
 .env
 .env.*
