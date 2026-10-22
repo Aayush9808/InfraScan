@@ -186,7 +186,7 @@ INFRASCAN_WEIGHTS=/path/to/best.pt python run_app.py
 
 ### Missing checkpoint behaviour
 
-The dashboard still starts without a checkpoint. The model chip changes to an unavailable state, the system page explains what is missing, and detection requests return an actionable error. The application never downloads a replacement checkpoint on its own.
+The dashboard still starts without a checkpoint. The model chip changes to an unavailable state, the system page explains what is missing, and detection requests return an actionable error. The dashboard never downloads a replacement checkpoint on its own. The standalone CLI scripts retain their historical fallback to Ultralytics `yolo11s.pt` when `--weights` is missing; pass an explicit checkpoint for reported results.
 
 ### Dataset sample picker
 
@@ -458,6 +458,7 @@ This repository is released under the [MIT License](LICENSE). It is an academic 
 ## Documentation
 
 - [API reference](http://localhost:8000/api/docs) (when the dashboard is running)
+- [Documentation homepage](https://github.com/Aayush9808/InfraScan-Documentation#readme)
 - [Project documentation repository](https://github.com/Aayush9808/InfraScan-Documentation)
 - [Screenshots](docs/screenshots/) and [evaluation curve](docs/evaluation/)
 - [GitHub repository](https://github.com/Aayush9808/InfraScan)
